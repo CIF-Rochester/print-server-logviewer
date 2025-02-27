@@ -1,8 +1,10 @@
 import argparse
+import os
+from config import load_config, Config
 from datetime import datetime, timedelta
 
-LOG_FILE = "/var/log/print-server/printer.log"
-
+SCRIPT_PATH = os.path.abspath(os.path.dirname(__file__))
+DEFAULT_CFG_PATH = os.path.join(SCRIPT_PATH, "config.cfg")
 
 class Entry:
     def __init__(self, timestamp: datetime, msg: str) -> None:
@@ -14,17 +16,17 @@ class Entry:
 
 
 class Log:
-    def __init__(self, filename):
+    def __init__(self, filename, all):
         self.filename = filename
         with open(filename, 'r') as data:
             self.data = data.read()
         self.accessed: list[Entry] = []
-        self.find_accessed()
+        self.find_accessed(all)
 
-    def find_accessed(self):
+    def find_accessed(self, all):
         data_list = self.data.split("\n")
         for line in data_list:
-            if "INFO" in line:
+            if all or "INFO" in line:
                 timestamp_str = line.split("[")[1].split("]")[0]
                 try:
                     timestamp = datetime.strptime(timestamp_str, "%Y-%m-%d %H:%M:%S")
@@ -55,19 +57,22 @@ class Log:
 
 def parse_arguments():
     parser = argparse.ArgumentParser(description="Parse and display log file entries.")
-    parser.add_argument("-f", "--file", help="Path to the log file.", default=LOG_FILE)
+    parser.add_argument("--config","-c", help='Path to print server config file.', default=DEFAULT_CFG_PATH)
     parser.add_argument("--day", help="Show entries for a specific day (YYYY-MM-DD).")
     parser.add_argument("--from", dest="start", help="Start of date range (YYYY-MM-DD).")
     parser.add_argument("--to", dest="end", help="End of date range (YYYY-MM-DD).")
     parser.add_argument("--today", action="store_true", help="Show entries for today.")
     parser.add_argument("--yesterday", action="store_true", help="Show entries for yesterday.")
-    parser.add_argument("--failed", action="store_true", default=False, help="Show failed print attempts")
+    parser.add_argument("--all", action="store_true", default=False, help="Show failed print attempts")
     return parser.parse_args()
 
 
 def main():
     args = parse_arguments()
-    log = Log(args.file)
+    log = Log(args.file, args.all)
+
+    path_to_cfg = args.config
+    config: Config = load_config(path_to_cfg)
 
     # Handle the new arguments
     if args.today:
