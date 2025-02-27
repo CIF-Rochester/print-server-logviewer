@@ -26,7 +26,7 @@ class Log:
     def find_accessed(self, all):
         data_list = self.data.split("\n")
         for line in data_list:
-            if all or "INFO" in line:
+            if line and (all or "INFO" in line):
                 timestamp_str = line.split("[")[1].split("]")[0]
                 try:
                     timestamp = datetime.strptime(timestamp_str, "%Y-%m-%d %H:%M:%S")
@@ -63,17 +63,16 @@ def parse_arguments():
     parser.add_argument("--to", dest="end", help="End of date range (YYYY-MM-DD).")
     parser.add_argument("--today", action="store_true", help="Show entries for today.")
     parser.add_argument("--yesterday", action="store_true", help="Show entries for yesterday.")
-    parser.add_argument("--all", action="store_true", default=False, help="Show failed print attempts")
+    parser.add_argument("--all", action="store_true", help="Show failed print attempts")
     return parser.parse_args()
 
 
 def main():
     args = parse_arguments()
-    log = Log(args.file, args.all)
 
     path_to_cfg = args.config
     config: Config = load_config(path_to_cfg)
-
+    log = Log(config.logging.log_path, args.all)
     # Handle the new arguments
     if args.today:
         today = datetime.now().strftime("%Y-%m-%d")
